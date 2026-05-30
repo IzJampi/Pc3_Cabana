@@ -2,38 +2,53 @@
     ViewData["Title"] = "Tareas Externas";
 }
 
-<h2 class="mb-4">Tareas Externas <small class="text-muted fs-6">jsonplaceholder.typicode.com</small></h2>
-
-<div class="mb-3 d-flex gap-2 align-items-center">
-    <button class="btn btn-primary" onclick="cargarTareas()">Cargar tareas</button>
-    <div id="spinner" class="spinner-border spinner-border-sm text-primary d-none" role="status"></div>
+<div class="page-header">
+    <div class="ph-icon"><i class="bi bi-cloud-download-fill"></i></div>
+    <div>
+        <h2>Tareas Externas</h2>
+        <p>Datos consumidos desde <strong>jsonplaceholder.typicode.com</strong></p>
+    </div>
 </div>
 
-<div id="alerta" class="alert d-none"></div>
+<div class="d-flex gap-2 align-items-center mb-4">
+    <button class="btn btn-primary btn-sm px-4" onclick="cargarTareas()">
+        <i class="bi bi-arrow-clockwise me-1"></i>Cargar tareas
+    </button>
+    <div id="spinner" class="spinner-border spinner-border-sm text-primary d-none"></div>
+    <span id="contadorExternas" class="text-muted small ms-1"></span>
+</div>
 
-<!-- Detalle de tarea seleccionada -->
-<div id="detalle" class="card mb-4 d-none">
-    <div class="card-header fw-bold">Detalle de tarea</div>
+<div id="alerta" class="alert d-none mb-3"></div>
+
+<!-- Detalle -->
+<div id="detalle" class="card mb-4 d-none border-start border-4 border-primary">
     <div class="card-body">
-        <p><strong>ID:</strong> <span id="detId"></span></p>
-        <p><strong>Título:</strong> <span id="detTitulo"></span></p>
-        <p><strong>Completado:</strong> <span id="detCompletado"></span></p>
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>Detalle de tarea seleccionada</span>
+                <h5 class="mt-1 mb-2" id="detTitulo"></h5>
+                <div class="d-flex gap-3">
+                    <span class="small text-muted">ID externo: <strong id="detId"></strong></span>
+                    <span class="small">Completado: <span id="detCompletado"></span></span>
+                </div>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('detalle').classList.add('d-none')">
+                <i class="bi bi-x"></i>
+            </button>
+        </div>
     </div>
 </div>
 
 <!-- Tabla -->
-<div class="table-responsive">
-    <table class="table table-bordered table-hover">
-        <thead class="table-dark">
-            <tr>
-                <th>External ID</th>
-                <th>Título</th>
-                <th>Completado</th>
-                <th>Detalle</th>
-            </tr>
-        </thead>
-        <tbody id="tablaExternas"></tbody>
-    </table>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr><th>External ID</th><th>Título</th><th>Completado</th><th>Acción</th></tr>
+            </thead>
+            <tbody id="tablaExternas"></tbody>
+        </table>
+    </div>
 </div>
 
 @section Scripts {
@@ -41,67 +56,47 @@
     async function cargarTareas() {
         const spinner = document.getElementById('spinner');
         spinner.classList.remove('d-none');
-        ocultarDetalle();
+        document.getElementById('detalle').classList.add('d-none');
 
         try {
             const res = await fetch('/api/tareas-externas');
-            if (!res.ok) {
-                mostrarAlerta('danger', `Error ${res.status}: No se pudo obtener las tareas externas.`);
-                return;
-            }
+            if (!res.ok) { mostrarAlerta('danger', `Error ${res.status}: No se pudo obtener las tareas externas.`); return; }
             const tareas = await res.json();
             renderTabla(tareas);
+            document.getElementById('contadorExternas').textContent = `${tareas.length} tareas cargadas`;
             ocultarAlerta();
-        } catch {
-            mostrarAlerta('danger', 'No se pudo conectar con la API.');
-        } finally {
-            spinner.classList.add('d-none');
-        }
+        } catch { mostrarAlerta('danger', 'No se pudo conectar con la API.'); }
+        finally { spinner.classList.add('d-none'); }
     }
 
     function renderTabla(tareas) {
-        const tbody = document.getElementById('tablaExternas');
-        tbody.innerHTML = tareas.map(t => `
+        document.getElementById('tablaExternas').innerHTML = tareas.map(t => `
             <tr>
-                <td>${t.externalId}</td>
+                <td><span class="badge bg-secondary">#${t.externalId}</span></td>
                 <td>${t.titulo}</td>
                 <td><span class="badge ${t.completado ? 'bg-success' : 'bg-secondary'}">${t.completado ? 'Sí' : 'No'}</span></td>
-                <td><button class="btn btn-sm btn-outline-primary" onclick="verDetalle(${t.externalId})">Ver</button></td>
+                <td><button class="btn btn-sm btn-outline-primary" onclick="verDetalle(${t.externalId})"><i class="bi bi-eye me-1"></i>Ver</button></td>
             </tr>`).join('');
     }
 
     async function verDetalle(id) {
         try {
             const res = await fetch(`/api/tareas-externas/${id}`);
-            if (res.status === 404) {
-                mostrarAlerta('warning', `No existe la tarea con ID ${id}.`);
-                ocultarDetalle();
-                return;
-            }
-            if (!res.ok) {
-                mostrarAlerta('danger', 'Error al obtener el detalle.');
-                return;
-            }
+            if (res.status === 404) { mostrarAlerta('warning', `No existe la tarea con ID ${id}.`); return; }
+            if (!res.ok) { mostrarAlerta('danger', 'Error al obtener el detalle.'); return; }
             const t = await res.json();
             document.getElementById('detId').textContent = t.externalId;
             document.getElementById('detTitulo').textContent = t.titulo;
-            document.getElementById('detCompletado').textContent = t.completado ? 'Sí' : 'No';
+            document.getElementById('detCompletado').innerHTML = t.completado
+                ? '<span class="badge bg-success">Sí</span>'
+                : '<span class="badge bg-secondary">No</span>';
             document.getElementById('detalle').classList.remove('d-none');
             ocultarAlerta();
             window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch {
-            mostrarAlerta('danger', 'No se pudo conectar con la API.');
-        }
+        } catch { mostrarAlerta('danger', 'No se pudo conectar con la API.'); }
     }
 
-    function ocultarDetalle() { document.getElementById('detalle').classList.add('d-none'); }
-
-    function mostrarAlerta(tipo, msg) {
-        const a = document.getElementById('alerta');
-        a.className = `alert alert-${tipo}`;
-        a.textContent = msg;
-    }
-
+    function mostrarAlerta(tipo, msg) { const a = document.getElementById('alerta'); a.className = `alert alert-${tipo}`; a.textContent = msg; }
     function ocultarAlerta() { document.getElementById('alerta').className = 'alert d-none'; }
 </script>
 }
