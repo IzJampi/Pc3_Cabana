@@ -1,8 +1,64 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Inicio";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<!-- Hero -->
+<div class="page-header mb-4">
+    <div class="ph-icon"><i class="bi bi-check2-square"></i></div>
+    <div>
+        <h2>Gestor de Tareas</h2>
+        <p>API RESTful con ASP.NET Core 10 &mdash; EF Core &middot; API Externa &middot; ML.NET</p>
+    </div>
+</div>
+
+<!-- Feature cards -->
+<div class="row g-4 mb-5">
+    <div class="col-sm-6 col-lg-4">
+        <a class="feat-card card shadow-sm" asp-controller="Home" asp-action="Tareas">
+            <div class="feat-icon bg-primary bg-opacity-10 text-primary">
+                <i class="bi bi-kanban-fill"></i>
+            </div>
+            <h5>Tareas</h5>
+            <p>Crea, edita y elimina tareas. Filtra por estado, prioridad y fechas de vencimiento.</p>
+            <span class="mt-3 text-primary small fw-semibold">Ir a Tareas <i class="bi bi-arrow-right"></i></span>
+        </a>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <a class="feat-card card shadow-sm" asp-controller="Home" asp-action="TareasExternas">
+            <div class="feat-icon bg-success bg-opacity-10 text-success">
+                <i class="bi bi-cloud-download-fill"></i>
+            </div>
+            <h5>Tareas Externas</h5>
+            <p>Consume la API de JSONPlaceholder y visualiza tareas externas mapeadas a nuestro DTO.</p>
+            <span class="mt-3 text-success small fw-semibold">Ir a Externas <i class="bi bi-arrow-right"></i></span>
+        </a>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <a class="feat-card card shadow-sm" asp-controller="Home" asp-action="Sentimiento">
+            <div class="feat-icon bg-warning bg-opacity-10 text-warning">
+                <i class="bi bi-stars"></i>
+            </div>
+            <h5>ML Sentimiento</h5>
+            <p>Modelo ML.NET entrenado con SDCA que clasifica comentarios como Positivo o Negativo.</p>
+            <span class="mt-3 text-warning small fw-semibold">Ir a ML <i class="bi bi-arrow-right"></i></span>
+        </a>
+    </div>
+</div>
+
+<!-- Endpoints rápidos -->
+<div class="card">
+    <div class="card-header"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Endpoints disponibles</div>
+    <div class="card-body p-0">
+        <table class="table mb-0">
+            <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/tareas</code></td><td>Lista tareas con filtros opcionales</td></tr>
+                <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/tareas</code></td><td>Crear nueva tarea</td></tr>
+                <tr><td><span class="badge bg-warning text-dark">PUT</span></td><td><code>/api/tareas/{id}</code></td><td>Actualizar tarea</td></tr>
+                <tr><td><span class="badge bg-danger">DELETE</span></td><td><code>/api/tareas/{id}</code></td><td>Eliminar tarea</td></tr>
+                <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/tareas-externas</code></td><td>Tareas de JSONPlaceholder</td></tr>
+                <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/ml/sentimiento</code></td><td>Analizar sentimiento con ML.NET</td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>

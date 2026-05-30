@@ -1,0 +1,127 @@
+@{
+    ViewData["Title"] = "ML Sentimiento";
+}
+
+<div class="page-header">
+    <div class="ph-icon"><i class="bi bi-stars"></i></div>
+    <div>
+        <h2>Análisis de Sentimiento</h2>
+        <p>Modelo ML.NET &mdash; SdcaMaximumEntropy &middot; Clasificación binaria: Positivo / Negativo</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Panel izquierdo: formulario -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-chat-left-text-fill me-2 text-primary"></i>Ingresa un comentario</div>
+            <div class="card-body p-4">
+                <textarea id="comentario" class="form-control mb-3" rows="5"
+                    placeholder="Ej: El sistema funciona perfecto y el equipo hizo un excelente trabajo..."></textarea>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary px-4" onclick="analizar()">
+                        <i class="bi bi-cpu me-1"></i>Analizar
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="limpiar()">
+                        <i class="bi bi-x-circle me-1"></i>Limpiar
+                    </button>
+                </div>
+                <div id="alerta" class="alert alert-danger mt-3 d-none"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel derecho: resultado -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-bar-chart-fill me-2 text-success"></i>Resultado</div>
+            <div class="card-body p-4 d-flex align-items-center justify-content-center">
+                <div id="placeholder" class="text-center text-muted">
+                    <i class="bi bi-arrow-left-circle fs-1 d-block mb-2 opacity-25"></i>
+                    <span class="small">El resultado aparecerá aquí</span>
+                </div>
+                <div id="resultado" class="text-center d-none w-100">
+                    <div id="icono" style="font-size:4rem" class="mb-2"></div>
+                    <h3 id="etiqueta" class="fw-bold mb-2"></h3>
+                    <p id="comentarioMostrado" class="text-muted fst-italic small px-2"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Historial -->
+<div id="historialSection" class="card mt-4 d-none">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock-history me-2 text-secondary"></i>Historial de análisis</span>
+        <button class="btn btn-sm btn-outline-danger" onclick="limpiarHistorial()">
+            <i class="bi bi-trash me-1"></i>Limpiar
+        </button>
+    </div>
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead><tr><th>#</th><th>Comentario</th><th>Sentimiento</th></tr></thead>
+            <tbody id="tablaHistorial"></tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const historial = [];
+
+    async function analizar() {
+        const comentario = document.getElementById('comentario').value.trim();
+        if (!comentario) { mostrarAlerta('Escribe un comentario antes de analizar.'); return; }
+        ocultarAlerta();
+
+        try {
+            const res = await fetch('/api/ml/sentimiento', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ comentario })
+            });
+            if (!res.ok) { mostrarAlerta(await res.text() || 'Error al analizar.'); return; }
+            const data = await res.json();
+            mostrarResultado(data);
+            agregarHistorial(data);
+        } catch { mostrarAlerta('No se pudo conectar con la API.'); }
+    }
+
+    function mostrarResultado(data) {
+        const pos = data.sentimiento === 'Positivo';
+        document.getElementById('icono').textContent   = pos ? '😊' : '😞';
+        document.getElementById('etiqueta').textContent = data.sentimiento;
+        document.getElementById('etiqueta').className  = `fw-bold mb-2 ${pos ? 'text-success' : 'text-danger'}`;
+        document.getElementById('comentarioMostrado').textContent = `"${data.comentario}"`;
+        document.getElementById('placeholder').classList.add('d-none');
+        document.getElementById('resultado').classList.remove('d-none');
+    }
+
+    function agregarHistorial(data) {
+        historial.unshift(data);
+        document.getElementById('tablaHistorial').innerHTML = historial.map((h, i) => `
+            <tr>
+                <td>${historial.length - i}</td>
+                <td class="small">${h.comentario}</td>
+                <td><span class="badge ${h.sentimiento === 'Positivo' ? 'bg-success' : 'bg-danger'}">${h.sentimiento}</span></td>
+            </tr>`).join('');
+        document.getElementById('historialSection').classList.remove('d-none');
+    }
+
+    function limpiar() {
+        document.getElementById('comentario').value = '';
+        document.getElementById('resultado').classList.add('d-none');
+        document.getElementById('placeholder').classList.remove('d-none');
+        ocultarAlerta();
+    }
+
+    function limpiarHistorial() {
+        historial.length = 0;
+        document.getElementById('historialSection').classList.add('d-none');
+    }
+
+    function mostrarAlerta(msg) { const a = document.getElementById('alerta'); a.textContent = msg; a.classList.remove('d-none'); }
+    function ocultarAlerta() { document.getElementById('alerta').classList.add('d-none'); }
+</script>
+}

@@ -1,56 +1,79 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Pc3_Cabana</title>
+    <title>@ViewData["Title"] - Gestor de Tareas</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Pc3_Cabana.styles.css" asp-append-version="true" />
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-custom navbar-expand-sm">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Pc3_Cabana</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+                <a class="navbar-brand" asp-controller="Home" asp-action="Index">
+                    <i class="bi bi-check2-square me-2"></i>Gestor<span>Tareas</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+                <div class="navbar-collapse collapse">
+                    <ul class="navbar-nav flex-grow-1 gap-1 ms-3">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link" asp-controller="Home" asp-action="Index">
+                                <i class="bi bi-house me-1"></i>Inicio
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Tareas">Tareas</a>
+                            <a class="nav-link" asp-controller="Home" asp-action="Tareas">
+                                <i class="bi bi-kanban me-1"></i>Tareas
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="TareasExternas">Tareas Externas</a>
+                            <a class="nav-link" asp-controller="Home" asp-action="TareasExternas">
+                                <i class="bi bi-cloud-download me-1"></i>Tareas Externas
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link" asp-controller="Home" asp-action="Sentimiento">
+                                <i class="bi bi-stars me-1"></i>ML Sentimiento
+                            </a>
                         </li>
                     </ul>
+                    <span class="text-secondary small d-none d-sm-inline">
+                        <i class="bi bi-circle-fill text-success me-1" style="font-size:.5rem;vertical-align:middle"></i>API activa
+                    </span>
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
+
+    <div class="container py-4">
+        <main role="main">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - Pc3_Cabana - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="site-footer">
+        <div class="container d-flex justify-content-between align-items-center">
+            <span>&copy; 2026 GestorTareas &mdash; ASP.NET Core 10</span>
+            <span><i class="bi bi-github me-1"></i><a href="#">IzJampi</a></span>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        // Marca el nav link activo
+        const path = window.location.pathname.toLowerCase();
+        document.querySelectorAll('.navbar-custom .nav-link').forEach(l => {
+            const href = l.getAttribute('href')?.toLowerCase();
+            if (href && path === href) l.classList.add('active');
+        });
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

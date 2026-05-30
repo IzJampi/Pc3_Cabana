@@ -2,6 +2,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddHttpClient();
+builder.Services.AddSingleton<Pc3_Cabana.MLModel.SentimientoService>(sp =>
+    new Pc3_Cabana.MLModel.SentimientoService(
+        sp.GetRequiredService<IWebHostEnvironment>()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllersWithViews()
