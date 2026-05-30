@@ -1,0 +1,107 @@
+@{
+    ViewData["Title"] = "Tareas Externas";
+}
+
+<h2 class="mb-4">Tareas Externas <small class="text-muted fs-6">jsonplaceholder.typicode.com</small></h2>
+
+<div class="mb-3 d-flex gap-2 align-items-center">
+    <button class="btn btn-primary" onclick="cargarTareas()">Cargar tareas</button>
+    <div id="spinner" class="spinner-border spinner-border-sm text-primary d-none" role="status"></div>
+</div>
+
+<div id="alerta" class="alert d-none"></div>
+
+<!-- Detalle de tarea seleccionada -->
+<div id="detalle" class="card mb-4 d-none">
+    <div class="card-header fw-bold">Detalle de tarea</div>
+    <div class="card-body">
+        <p><strong>ID:</strong> <span id="detId"></span></p>
+        <p><strong>Título:</strong> <span id="detTitulo"></span></p>
+        <p><strong>Completado:</strong> <span id="detCompletado"></span></p>
+    </div>
+</div>
+
+<!-- Tabla -->
+<div class="table-responsive">
+    <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>External ID</th>
+                <th>Título</th>
+                <th>Completado</th>
+                <th>Detalle</th>
+            </tr>
+        </thead>
+        <tbody id="tablaExternas"></tbody>
+    </table>
+</div>
+
+@section Scripts {
+<script>
+    async function cargarTareas() {
+        const spinner = document.getElementById('spinner');
+        spinner.classList.remove('d-none');
+        ocultarDetalle();
+
+        try {
+            const res = await fetch('/api/tareas-externas');
+            if (!res.ok) {
+                mostrarAlerta('danger', `Error ${res.status}: No se pudo obtener las tareas externas.`);
+                return;
+            }
+            const tareas = await res.json();
+            renderTabla(tareas);
+            ocultarAlerta();
+        } catch {
+            mostrarAlerta('danger', 'No se pudo conectar con la API.');
+        } finally {
+            spinner.classList.add('d-none');
+        }
+    }
+
+    function renderTabla(tareas) {
+        const tbody = document.getElementById('tablaExternas');
+        tbody.innerHTML = tareas.map(t => `
+            <tr>
+                <td>${t.externalId}</td>
+                <td>${t.titulo}</td>
+                <td><span class="badge ${t.completado ? 'bg-success' : 'bg-secondary'}">${t.completado ? 'Sí' : 'No'}</span></td>
+                <td><button class="btn btn-sm btn-outline-primary" onclick="verDetalle(${t.externalId})">Ver</button></td>
+            </tr>`).join('');
+    }
+
+    async function verDetalle(id) {
+        try {
+            const res = await fetch(`/api/tareas-externas/${id}`);
+            if (res.status === 404) {
+                mostrarAlerta('warning', `No existe la tarea con ID ${id}.`);
+                ocultarDetalle();
+                return;
+            }
+            if (!res.ok) {
+                mostrarAlerta('danger', 'Error al obtener el detalle.');
+                return;
+            }
+            const t = await res.json();
+            document.getElementById('detId').textContent = t.externalId;
+            document.getElementById('detTitulo').textContent = t.titulo;
+            document.getElementById('detCompletado').textContent = t.completado ? 'Sí' : 'No';
+            document.getElementById('detalle').classList.remove('d-none');
+            ocultarAlerta();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch {
+            mostrarAlerta('danger', 'No se pudo conectar con la API.');
+        }
+    }
+
+    function ocultarDetalle() { document.getElementById('detalle').classList.add('d-none'); }
+
+    function mostrarAlerta(tipo, msg) {
+        const a = document.getElementById('alerta');
+        a.className = `alert alert-${tipo}`;
+        a.textContent = msg;
+    }
+
+    function ocultarAlerta() { document.getElementById('alerta').className = 'alert d-none'; }
+</script>
+}

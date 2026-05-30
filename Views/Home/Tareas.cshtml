@@ -1,0 +1,269 @@
+@{
+    ViewData["Title"] = "Tareas";
+}
+
+<h2 class="mb-4">Gestión de Tareas</h2>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-header fw-bold">Filtros</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Estado</label>
+                <select id="filtroEstado" class="form-select">
+                    <option value="">Todos</option>
+                    <option>Pendiente</option>
+                    <option>EnProceso</option>
+                    <option>Completada</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Prioridad</label>
+                <select id="filtroPrioridad" class="form-select">
+                    <option value="">Todas</option>
+                    <option>Baja</option>
+                    <option>Media</option>
+                    <option>Alta</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Fecha inicio</label>
+                <input type="date" id="filtroFechaInicio" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Fecha fin</label>
+                <input type="date" id="filtroFechaFin" class="form-control" />
+            </div>
+        </div>
+        <div class="mt-3 d-flex gap-2">
+            <button class="btn btn-primary" onclick="cargarTareas()">Buscar</button>
+            <button class="btn btn-secondary" onclick="limpiarFiltros()">Limpiar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Botón nueva tarea -->
+<div class="mb-3">
+    <button class="btn btn-success" onclick="abrirModalCrear()">+ Nueva Tarea</button>
+</div>
+
+<!-- Alerta de errores -->
+<div id="alerta" class="alert d-none"></div>
+
+<!-- Tabla -->
+<div class="table-responsive">
+    <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Descripción</th>
+                <th>Estado</th>
+                <th>Prioridad</th>
+                <th>Vencimiento</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="tablaTareas"></tbody>
+    </table>
+</div>
+
+<!-- Modal Crear / Editar -->
+<div class="modal fade" id="modalTarea" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitulo">Nueva Tarea</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalAlerta" class="alert d-none"></div>
+                <input type="hidden" id="tareaId" />
+                <div class="mb-3">
+                    <label class="form-label">Título *</label>
+                    <input type="text" id="titulo" class="form-control" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descripción</label>
+                    <textarea id="descripcion" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Estado *</label>
+                    <select id="estado" class="form-select">
+                        <option>Pendiente</option>
+                        <option>EnProceso</option>
+                        <option>Completada</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Prioridad *</label>
+                    <select id="prioridad" class="form-select">
+                        <option>Baja</option>
+                        <option>Media</option>
+                        <option>Alta</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Fecha de vencimiento</label>
+                    <input type="date" id="fechaVencimiento" class="form-control" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarTarea()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const modal = new bootstrap.Modal(document.getElementById('modalTarea'));
+
+    async function cargarTareas() {
+        const estado = document.getElementById('filtroEstado').value;
+        const prioridad = document.getElementById('filtroPrioridad').value;
+        const fechaInicio = document.getElementById('filtroFechaInicio').value;
+        const fechaFin = document.getElementById('filtroFechaFin').value;
+
+        let url = '/api/tareas?';
+        if (estado) url += `estado=${estado}&`;
+        if (prioridad) url += `prioridad=${prioridad}&`;
+        if (fechaInicio) url += `fechaInicio=${fechaInicio}&`;
+        if (fechaFin) url += `fechaFin=${fechaFin}&`;
+
+        try {
+            const res = await fetch(url);
+            if (!res.ok) {
+                const err = await res.text();
+                mostrarAlerta('danger', err);
+                return;
+            }
+            const tareas = await res.json();
+            renderTabla(tareas);
+            ocultarAlerta();
+        } catch {
+            mostrarAlerta('danger', 'Error al conectar con la API.');
+        }
+    }
+
+    function renderTabla(tareas) {
+        const tbody = document.getElementById('tablaTareas');
+        if (tareas.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay tareas</td></tr>';
+            return;
+        }
+        tbody.innerHTML = tareas.map(t => `
+            <tr>
+                <td>${t.id}</td>
+                <td>${t.titulo}</td>
+                <td>${t.descripcion ?? '-'}</td>
+                <td><span class="badge ${badgeEstado(t.estado)}">${t.estado}</span></td>
+                <td><span class="badge ${badgePrioridad(t.prioridad)}">${t.prioridad}</span></td>
+                <td>${t.fechaVencimiento ? t.fechaVencimiento.substring(0,10) : '-'}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning" onclick="abrirModalEditar(${t.id})">Editar</button>
+                    <button class="btn btn-sm btn-danger" onclick="eliminarTarea(${t.id})">Eliminar</button>
+                </td>
+            </tr>`).join('');
+    }
+
+    function badgeEstado(e) {
+        return e === 'Completada' ? 'bg-success' : e === 'EnProceso' ? 'bg-warning text-dark' : 'bg-secondary';
+    }
+
+    function badgePrioridad(p) {
+        return p === 'Alta' ? 'bg-danger' : p === 'Media' ? 'bg-warning text-dark' : 'bg-info text-dark';
+    }
+
+    function abrirModalCrear() {
+        document.getElementById('modalTitulo').textContent = 'Nueva Tarea';
+        document.getElementById('tareaId').value = '';
+        document.getElementById('titulo').value = '';
+        document.getElementById('descripcion').value = '';
+        document.getElementById('estado').value = 'Pendiente';
+        document.getElementById('prioridad').value = 'Media';
+        document.getElementById('fechaVencimiento').value = '';
+        ocultarAlertaModal();
+        modal.show();
+    }
+
+    async function abrirModalEditar(id) {
+        const res = await fetch(`/api/tareas/${id}`);
+        if (!res.ok) { mostrarAlerta('danger', 'No se pudo cargar la tarea.'); return; }
+        const t = await res.json();
+        document.getElementById('modalTitulo').textContent = 'Editar Tarea';
+        document.getElementById('tareaId').value = t.id;
+        document.getElementById('titulo').value = t.titulo;
+        document.getElementById('descripcion').value = t.descripcion ?? '';
+        document.getElementById('estado').value = t.estado;
+        document.getElementById('prioridad').value = t.prioridad;
+        document.getElementById('fechaVencimiento').value = t.fechaVencimiento ? t.fechaVencimiento.substring(0,10) : '';
+        ocultarAlertaModal();
+        modal.show();
+    }
+
+    async function guardarTarea() {
+        const id = document.getElementById('tareaId').value;
+        const body = {
+            titulo: document.getElementById('titulo').value,
+            descripcion: document.getElementById('descripcion').value,
+            estado: document.getElementById('estado').value,
+            prioridad: document.getElementById('prioridad').value,
+            fechaVencimiento: document.getElementById('fechaVencimiento').value || null
+        };
+
+        const url = id ? `/api/tareas/${id}` : '/api/tareas';
+        const method = id ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        if (res.ok) {
+            modal.hide();
+            cargarTareas();
+        } else {
+            const err = await res.json();
+            const mensajes = Object.values(err.errors ?? {}).flat().join(' ');
+            mostrarAlertaModal('danger', mensajes || 'Error al guardar.');
+        }
+    }
+
+    async function eliminarTarea(id) {
+        if (!confirm(`¿Eliminar la tarea #${id}?`)) return;
+        const res = await fetch(`/api/tareas/${id}`, { method: 'DELETE' });
+        if (res.ok) cargarTareas();
+        else mostrarAlerta('danger', 'No se pudo eliminar la tarea.');
+    }
+
+    function limpiarFiltros() {
+        document.getElementById('filtroEstado').value = '';
+        document.getElementById('filtroPrioridad').value = '';
+        document.getElementById('filtroFechaInicio').value = '';
+        document.getElementById('filtroFechaFin').value = '';
+        cargarTareas();
+    }
+
+    function mostrarAlerta(tipo, msg) {
+        const a = document.getElementById('alerta');
+        a.className = `alert alert-${tipo}`;
+        a.textContent = msg;
+    }
+
+    function ocultarAlerta() { document.getElementById('alerta').className = 'alert d-none'; }
+
+    function mostrarAlertaModal(tipo, msg) {
+        const a = document.getElementById('modalAlerta');
+        a.className = `alert alert-${tipo}`;
+        a.textContent = msg;
+    }
+
+    function ocultarAlertaModal() { document.getElementById('modalAlerta').className = 'alert d-none'; }
+
+    cargarTareas();
+</script>
+}
