@@ -13,7 +13,43 @@ public class TareasController : ControllerBase
 
     // GET /api/tareas
     [HttpGet]
-    public ActionResult<IEnumerable<Tarea>> GetAll() => Ok(_tareas);
+    public ActionResult<IEnumerable<Tarea>> GetAll(
+        [FromQuery] string? estado,
+        [FromQuery] string? prioridad,
+        [FromQuery] DateTime? fechaInicio,
+        [FromQuery] DateTime? fechaFin)
+    {
+        if (estado is not null && !Enum.TryParse<EstadoTarea>(estado, ignoreCase: true, out _))
+            return BadRequest($"Estado inválido. Valores permitidos: {string.Join(", ", Enum.GetNames<EstadoTarea>())}");
+
+        if (prioridad is not null && !Enum.TryParse<PrioridadTarea>(prioridad, ignoreCase: true, out _))
+            return BadRequest($"Prioridad inválida. Valores permitidos: {string.Join(", ", Enum.GetNames<PrioridadTarea>())}");
+
+        if (fechaInicio.HasValue && fechaFin.HasValue && fechaInicio > fechaFin)
+            return BadRequest("fechaInicio no puede ser mayor que fechaFin.");
+
+        var resultado = _tareas.AsEnumerable();
+
+        if (estado is not null)
+        {
+            var estadoEnum = Enum.Parse<EstadoTarea>(estado, ignoreCase: true);
+            resultado = resultado.Where(t => t.Estado == estadoEnum);
+        }
+
+        if (prioridad is not null)
+        {
+            var prioridadEnum = Enum.Parse<PrioridadTarea>(prioridad, ignoreCase: true);
+            resultado = resultado.Where(t => t.Prioridad == prioridadEnum);
+        }
+
+        if (fechaInicio.HasValue)
+            resultado = resultado.Where(t => t.FechaVencimiento >= fechaInicio);
+
+        if (fechaFin.HasValue)
+            resultado = resultado.Where(t => t.FechaVencimiento <= fechaFin);
+
+        return Ok(resultado.ToList());
+    }
 
     // GET /api/tareas/{id}
     [HttpGet("{id:int}")]
